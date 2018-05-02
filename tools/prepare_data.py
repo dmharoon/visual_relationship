@@ -88,20 +88,37 @@ class DataLoader:
 			im = cv2.imread(path)
 			ih = im.shape[0]	
 			iw = im.shape[1]
-			for rel in rels:
-				phrase = rel["phrase"]
+			for p in range(len(rels)):
+				phrase = rels[p]["phrase"]
 				rLabel = self._getRelLabel(phrase[1])
 				aLabel = self._getObjLabel(phrase[0])
 				bLabel = self._getObjLabel(phrase[2])
-				aBBox = self._bboxTransform(rel["subBox"], ih, iw)
-				bBBox = self._bboxTransform(rel["objBox"], ih, iw)
-				rBBox = self._getUnionBBox(aBBox, bBBox, ih, iw)	
-				samples.append({"imPath": path, "rLabel": rLabel, "aLabel": aLabel, "bLabel": bLabel, "rBBox": rBBox, "aBBox": aBBox, "bBBox": bBBox})
-				self._sampleIdx += 1	
-				if self._sampleIdx % 100 == 0:
-					print self._sampleIdx
+				aBBox = self._bboxTransform(rels[p]["subBox"], ih, iw)
+				bBBox = self._bboxTransform(rels[p]["objBox"], ih, iw)
+				rBBox = self._getUnionBBox(aBBox, bBBox, ih, iw)
+
+				for q in range(len(rels)):
+					phrase_2 = rels[q]["phrase"]
+					rLabel_2 = self._getRelLabel(phrase_2[1])
+					rLabel_12 = rLabel * len(self._relList) + rLabel_2
+					aLabel_2 = self._getObjLabel(phrase_2[0])
+					bLabel_2 = self._getObjLabel(phrase_2[2])
+					aBBox_2 = self._bboxTransform(rels[q]["subBox"], ih, iw)
+					bBBox_2 = self._bboxTransform(rels[q]["objBox"], ih, iw)
+					rBBox_2 = self._getUnionBBox(aBBox_2, bBBox_2, ih, iw)
+
+					if (p != q) and ((aLabel == aLabel_2) or (bLabel == bLabel_2)):
+
+						samples.append({"p":p, "imPath": path, "rLabel_12": rLabel_12, "aLabel": aLabel, "bLabel": bLabel, "rBBox": rBBox, "aBBox": aBBox, "bBBox": bBBox,
+							"q":q, "aLabel_2": aLabel_2, "bLabel_2": bLabel_2, "rBBox_2": rBBox_2, "aBBox_2": aBBox_2, "bBBox_2": bBBox_2})
+						self._sampleIdx += 1	
+						if self._sampleIdx % 100 == 0:
+							print self._sampleIdx
+
 		self._outputDB("rel", samples)	
 		
 if __name__ == "__main__":
-	loader = DataLoader("/datasets/vrd", "test")
+	loader = DataLoader("/home/haroon/sem2/Machine Learning/drnet_cvpr2017_obj2vec/dataset/VRD", "train")
+	#loader = DataLoader("/home/haroon/sem2/Machine Learning/drnet_cvpr2017_obj2vec/dataset/VRD", "test")
 	loader._getRelSamplesSingle()
+2

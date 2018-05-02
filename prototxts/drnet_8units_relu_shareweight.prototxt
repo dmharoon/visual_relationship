@@ -10,7 +10,7 @@ layer {
                 phase: TRAIN     
         }         
         python_param {                 
-                module: 'rel_data_layer.layer'              
+                module: 'rel_data_layer.layer_pairwise'              
                 layer: 'RelDataLayer'                 
                 param_str: '{"dataset": "reltrain.json", "batch_size": 25, "nclass": 100}'   
         }         
@@ -27,7 +27,7 @@ layer {
                 phase: TEST            
         }         
         python_param {                 
-                module: 'rel_data_layer.layer'              
+                module: 'rel_data_layer.layer_pairwise'              
                 layer: 'RelDataLayer'
                 param_str: '{"dataset": "reltest.json", "batch_size": 25, "nclass": 100}'
         }         
@@ -414,81 +414,83 @@ layer {
 	}
 }
 layer {
-	name: "fc6"
+	name: "fc6_n"
 	type: "InnerProduct"
 	bottom: "pool5"
-	top: "fc6"
+	top: "fc6_n"
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	param {
-		lr_mult: 0
+		lr_mult: 2
 		decay_mult: 0
 	}
 	inner_product_param {
-		num_output: 4096
+		num_output: 9800
 	}
 }
 layer {
 	name: "relu6"
 	type: "ReLU"
-	bottom: "fc6"
-	top: "fc6"
+	bottom: "fc6_n"
+	top: "fc6_n"
 }
-layer {
-	name: "fc7"
-	type: "InnerProduct"
-	bottom: "fc6"
-	top: "fc7"
-	param {
-		lr_mult: 0
-		decay_mult: 0
-	}
-	param {
-		lr_mult: 0
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 4096
-	}
-}
-layer {
-	name: "relu7"
-	type: "ReLU"
-	bottom: "fc7"
-	top: "fc7"
-}
-layer {
-	name: "fc8"
-	type: "InnerProduct"
-	bottom: "fc7"
-	top: "fc8"
-	param {
-		lr_mult: 0
-		decay_mult: 0
-	}
-	param {
-		lr_mult: 0
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 256
-		weight_filler {
-			type: "xavier"
-		}
-		bias_filler {
-			type: "constant"
-			value: 0
-		}
-	}
-}
-layer {
-	name: "relu8"
-	type: "ReLU"
-	bottom: "fc8"
-	top: "fc8"
-}
+#layer {
+#	name: "fc7"
+#	type: "InnerProduct"
+#	bottom: "fc6"
+#	top: "fc7"
+#	param {
+#		lr_mult: 0
+#		decay_mult: 0
+#	}
+#	param {
+#		lr_mult: 0
+#		decay_mult: 0
+#	}
+#	inner_product_param {
+#		num_output: 4900
+#	}
+#}
+#layer {
+#	name: "relu7"
+#	type: "ReLU"
+#	bottom: "fc7"
+#	top: "fc7"
+#}
+
+#layer {
+#	name: "fc8"
+#	type: "InnerProduct"
+#	bottom: "fc7"
+#	top: "fc8"
+#	param {
+#		lr_mult: 0
+#		decay_mult: 0
+#	}
+#	param {
+#		lr_mult: 0
+#		decay_mult: 0
+#	}
+#	inner_product_param {
+#		num_output: 256
+#		weight_filler {
+#			type: "xavier"
+#		}
+#		bias_filler {
+#			type: "constant"
+#			value: 0
+#		}
+#	}
+#}
+
+#layer {
+#	name: "relu8"
+#	type: "ReLU"
+#	bottom: "fc8"
+#	top: "fc8"
+#}
 
 # Spatial Cfg Subnet
 layer {
@@ -497,11 +499,11 @@ layer {
 	bottom: "posdata"
 	top: "conv1_p"
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	convolution_param {
@@ -523,11 +525,11 @@ layer {
 	bottom: "conv1_p"
 	top: "conv2_p"
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	convolution_param {
@@ -543,16 +545,16 @@ layer {
 	bottom: "conv2_p"
 	top: "conv3_p"
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	convolution_param {
-		num_output: 64
-		kernel_size: 8
+		num_output: 256
+		kernel_size: 5
 	}
 }
 layer {
@@ -561,11 +563,12 @@ layer {
 	bottom: "conv3_p"
 	top: "conv3_p"
 }
+
 # Combine features from subnets
 layer {
 	name: "concat1_c"
 	type: "Python"
-	bottom: "fc8"
+	bottom: "fc6_n"
 	bottom: "conv3_p"
 	top: "concat1_c"
 	python_param {
@@ -573,44 +576,46 @@ layer {
 		layer: "Layer"
 	}
 }
+
 layer {
-	name: "fc2_c"
+	name: "fc7_c"
 	type: "InnerProduct"
 	bottom: "concat1_c"
-	top: "fc2_c"
+	top: "fc7_c"
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	param {
-		lr_mult: 0
+		lr_mult: 2
 		decay_mult: 0
 	}
 	inner_product_param {
-		num_output: 128
+		num_output: 6200
 	}
 }
+
 layer {
 	name: "relu2_c"
 	type: "ReLU"
-	bottom: "fc2_c"
-	top: "fc2_c"
+	bottom: "fc7_c"
+	top: "fc7_c"
 }
 layer {
 	name: "PhiR_0"
 	type: "InnerProduct"
-	bottom: "fc2_c"
+	bottom: "fc7_c"
 	top: "q0r"
 	param {
-		lr_mult: 0
+		lr_mult: 1
 		decay_mult: 0
 	}
 	param {
-		lr_mult: 0
+		lr_mult: 2
 		decay_mult: 0
 	}
 	inner_product_param {
-		num_output: 70
+		num_output: 4900
 		weight_filler {
 			type: "xavier"
 		}
@@ -620,610 +625,19 @@ layer {
 		}
 	}
 }
+
 layer {
 	name: "relu_0"
 	type: "ReLU"
 	bottom: "q0r"
 	top: "qr0"
 }
-#DR-Net
-layer {
-	name: "PhiA_1"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar1"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-		weight_filler {
-			type: "xavier"
-		}
-		bias_filler {
-			type: "constant"
-			value: 0
-		}
-	}
-}
-layer {
-	name: "PhiB_1"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr1"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-		weight_filler {
-			type: "xavier"
-		}
-		bias_filler {
-			type: "constant"
-			value: 0
-		}
-	}
-}
-layer {
-	name: "PhiR_1"
-	type: "InnerProduct"
-	bottom: "qr0"
-	top: "q1r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {	
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-		weight_filler {
-			type: "xavier"
-		}
-		bias_filler {
-			type: "constant"
-			value: 0
-		}
-	}
-}
-layer {
-	name: "QSum_1"
-	type: "Eltwise"
-	bottom: "qar1"
-	bottom: "qbr1"
-	bottom: "q1r"
-	top: "qr1un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_1"
-	type: "ReLU"
-	bottom: "qr1un"
-	top: "qr1"
-}
-layer {
-	name: "PhiA_2"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar2"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_2"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr2"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_2"
-	type: "InnerProduct"
-	bottom: "qr1"
-	top: "q2r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_2"
-	type: "Eltwise"
-	bottom: "qar2"
-	bottom: "qbr2"
-	bottom: "q2r"
-	top: "qr2un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_2"
-	type: "ReLU"
-	bottom: "qr2un"
-	top: "qr2"
-}
-layer {
-	name: "PhiA_3"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar3"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_3"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr3"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_3"
-	type: "InnerProduct"
-	bottom: "qr2"
-	top: "q3r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_3"
-	type: "Eltwise"
-	bottom: "qar3"
-	bottom: "qbr3"
-	bottom: "q3r"
-	top: "qr3un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_3"
-	type: "ReLU"
-	bottom: "qr3un"
-	top: "qr3"
-}
-layer {
-	name: "PhiA_4"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar4"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_4"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr4"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_4"
-	type: "InnerProduct"
-	bottom: "qr3"
-	top: "q4r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_4"
-	type: "Eltwise"
-	bottom: "qar4"
-	bottom: "qbr4"
-	bottom: "q4r"
-	top: "qr4un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_4"
-	type: "ReLU"
-	bottom: "qr4un"
-	top: "qr4"
-}
-layer {
-	name: "PhiA_5"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar5"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_5"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr5"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_5"
-	type: "InnerProduct"
-	bottom: "qr4"
-	top: "q5r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_5"
-	type: "Eltwise"
-	bottom: "qar5"
-	bottom: "qbr5"
-	bottom: "q5r"
-	top: "qr5un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_5"
-	type: "ReLU"
-	bottom: "qr5un"
-	top: "qr5"
-}
 
-layer {
-	name: "PhiA_6"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar6"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_6"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr6"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_6"
-	type: "InnerProduct"
-	bottom: "qr5"
-	top: "q6r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_6"
-	type: "Eltwise"
-	bottom: "qar6"
-	bottom: "qbr6"
-	bottom: "q6r"
-	top: "qr6un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_6"
-	type: "ReLU"
-	bottom: "qr6un"
-	top: "qr6"
-}
-layer {
-	name: "PhiA_7"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar7"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_7"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr7"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_7"
-	type: "InnerProduct"
-	bottom: "qr6"
-	top: "q7r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_7"
-	type: "Eltwise"
-	bottom: "qar7"
-	bottom: "qbr7"
-	bottom: "q7r"
-	top: "qr7un"
-	eltwise_param { operation: SUM }
-}
-layer {
-	name: "relu_7"
-	type: "ReLU"
-	bottom: "qr7un"
-	top: "qr7"
-}
-layer {
-	name: "PhiA_8"
-	type: "InnerProduct"
-	bottom: "qa"
-	top: "qar8"
-	param {
-		name: "qar_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qar_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiB_8"
-	type: "InnerProduct"
-	bottom: "qb"
-	top: "qbr8"
-	param {
-		name: "qbr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qbr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "PhiR_8"
-	type: "InnerProduct"
-	bottom: "qr7"
-	top: "q8r"
-	param {
-		name: "qr_w"
-		lr_mult: 1
-		decay_mult: 1
-	}
-	param {
-		name: "qr_b"
-		lr_mult: 2
-		decay_mult: 0
-	}
-	inner_product_param {
-		num_output: 70
-	}
-}
-layer {
-	name: "QSum_8"
-	type: "Eltwise"
-	bottom: "qar8"
-	bottom: "qbr8"
-	bottom: "q8r"
-	top: "qr8"
-	eltwise_param { operation: SUM }
-}
 layer {
 	name: "loss3"
 	type: "SoftmaxWithLoss"
 	top: "loss3"
-	bottom: "qr8"
+	bottom: "qr0"
 	bottom: "labels"
 	include {
 		phase: TRAIN
@@ -1233,7 +647,7 @@ layer {
 layer {
 	name: "softmax"
 	type: "Softmax"
-	bottom: "qr8"
+	bottom: "qr0"
 	top: "pred"
 	include {
 		phase: TEST
