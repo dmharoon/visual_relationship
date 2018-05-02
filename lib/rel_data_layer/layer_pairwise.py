@@ -66,15 +66,16 @@ class RelDataLayer(caffe.Layer):
 			qa[sample["aLabel"] - 1] = 1
 			qa_2 = np.zeros(self._nclass)
 			qa_2[sample["aLabel_2"] - 1] = 1
-			qa = qa + qa_2
+			qa = np.concatenate([qa, qa_2])
 			qas.append(qa)
+			
 			
 			###subject label
 			qb = np.zeros(self._nclass)
 			qb[sample["bLabel"] - 1] = 1
 			qb_2 = np.zeros(self._nclass)
 			qb_2[sample["bLabel_2"] - 1] = 1
-			qb = qb + qb_2
+			qb = np.concatenate([qb, qb_2])
 			qbs.append(qb)
 
 			###Appearance and mask features
@@ -84,7 +85,9 @@ class RelDataLayer(caffe.Layer):
 			poses.append([mask1, mask2])
 
 			###label
-			labels.append(sample["rLabel_12"])
+			labels.append(sample["rLabel"])
+			labels.append(sample["rLabel_2"])
+			print "labels ............",labels
 
 		return {"qa": np.array(qas), "qb": np.array(qbs), "im": np.array(ims), "posdata": np.array(poses), "labels": np.array(labels)}
 	
@@ -101,7 +104,7 @@ class RelDataLayer(caffe.Layer):
 		top[1].reshape(self._batch_size, 2 * self._nclass)
 		top[2].reshape(self._batch_size, 3, 224, 224)
 		top[3].reshape(self._batch_size, 2, 32, 64)
-		top[4].reshape(self._batch_size)
+		top[4].reshape(self._batch_size*2)
 		
 	def forward(self, bottom, top):
 		batch = self._get_next_batch()
