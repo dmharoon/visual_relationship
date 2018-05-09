@@ -37,28 +37,41 @@ class TensorDecompLoss(caffe.Layer):
 		top[0].reshape(1)
 
 	def forward(self,bottom,top):
-		self._probs = np.zeros((self._R, 70, 70), dtype = np.float32)
-		for i in range(self._R):
-			self._probs[i] = np.outer(np.exp(self._pred1[i]), np.exp(self._pred2[i]))
-		self._softmax = np.sum(self._probs,axis=0) / self._Z
-		print self._label1, self._label2
-		self._Error = -np.log(self._softmax[self._label1, self._label2])
-		top[0].data[...] = self._Error
-		print "error is : ", self._Error
+		#self._probs = np.zeros((self._R, 70, 70), dtype = np.float32)
+		#for i in range(self._R):
+		#	self._probs[i] = np.outer(np.exp(self._pred1[i]), np.exp(self._pred2[i]))
+		#self._softmax = np.sum(self._probs,axis=0) / self._Z
+		#print self._label1, self._label2
+		#self._Error = -np.log(self._softmax[self._label1, self._label2])
+		#top[0].data[...] = self._Error
+		#print "error is : ", self._Error
+	
 		
+		softmax_l1l2 = np.sum(np.exp(self._pred1[:,self._label1] + self._pred2[:,self._label2])) / self._Z
+		top[0].data[...] = -np.log(softmax_l1l2)
+		print "error is : ", top[0].data[...]
+	
 	def backward(self, top, propagate_down, bottom):
 		print "backward ...."
 		diff1 = np.zeros_like(self._pred1,dtype=np.float32)
 		diff2 = np.zeros_like(self._pred2,dtype=np.float32)
-		tmp1 = np.zeros_like(self._pred1,dtype=np.float32)
-		tmp2 = np.zeros_like(self._pred2,dtype=np.float32)
+		#tmp1 = np.zeros_like(self._pred1,dtype=np.float32)
+		#tmp2 = np.zeros_like(self._pred2,dtype=np.float32)
+		#for i in range(self._R):
+		#	tmp1[i,self._label1] = (self._probs[i, self._label1, self._label2]) / (self._softmax[self._label1, self._label2])
+		#	tmp2[i,self._label2] = tmp1[i,self._label1]
+		#	diff1[i] = (np.sum(self._probs[i],axis=(1)) - tmp1[i]) / self._Z
+		#	diff2[i] = (np.sum(self._probs[i],axis=(0)) - tmp2[i]) / self._Z
+		#bottom[0].diff[...] = np.concatenate([diff1.reshape((self._R * 70)),diff2.reshape((self._R * 70))])
+
+
+		z_l1l2 = np.sum(np.exp(self._pred1[:,self._label1] + self._pred2[:,self._label2]))
 		for i in range(self._R):
-			tmp1[i,self._label1] = (self._probs[i, self._label1, self._label2]) / (self._softmax[self._label1, self._label2])
-			tmp2[i,self._label2] = tmp1[i,self._label1]
-			diff1[i] = (np.sum(self._probs[i],axis=(1)) - tmp1[i]) / self._Z
-			diff2[i] = (np.sum(self._probs[i],axis=(0)) - tmp2[i]) / self._Z
+			diff1[i] = (np.exp(self._pred1[i]) * np.sum(np.exp(self._pred2[i]))) / self._Z
+			diff2[i] = (np.exp(self._pred2[i]) * np.sum(np.exp(self._pred1[i]))) / self._Z
+			tmp = (np.exp(self._pred1[i,self._label1] + self._pred2[i, self._label2]) / z_l1l2)
+			diff1[i,self._label1] -= tmp
+			diff2[i,self._label2] -= tmp			
 		bottom[0].diff[...] = np.concatenate([diff1.reshape((self._R * 70)),diff2.reshape((self._R * 70))])
-
-
 
 		

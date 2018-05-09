@@ -25,6 +25,7 @@ class TensorDecompLoss(caffe.Layer):
 		self._label = np.zeros((100,100,70))
 		self._label[np.unravel_index(int(bottom[1].data[...]),(100,100,70))]=1
 
+
 	def _compute_Z(self):
 		_sum_s=np.zeros(self._R)
 		_sum_o=np.zeros(self._R)
@@ -38,12 +39,13 @@ class TensorDecompLoss(caffe.Layer):
 		return self._Z
 
 	def reshape(self,bottom,top):
-		self.probs = np.zeros((self._R,100,100,70),dtype=np.float32)
+		
 		self.softmax = np.zeros((100,100,70),dtype=np.float32)
 		top[0].reshape(1)
 
 	def forward(self,bottom,top):
 		self._Z = self._compute_Z()
+		self.probs = np.zeros((self._R,100,100,70),dtype=np.float32)
 		for i in range(self._R):
 			self.__sub[i] = np.exp(self._sub[(i*100):((i+1)*100)])
 			self.__obj[i] = np.exp(self._obj[(i*100):((i+1)*100)])
@@ -55,8 +57,6 @@ class TensorDecompLoss(caffe.Layer):
 		print "error is : ", self._Error
 		
 	def backward(self, top, propagate_down, bottom):
-		print "hi................"
-		print "hi................"
 		self._sub_diff = np.zeros(self._R * 100)
 		self._obj_diff = np.zeros(self._R * 100)
 		self._pred_diff = np.zeros(self._R * 70)
